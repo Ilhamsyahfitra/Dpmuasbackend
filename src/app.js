@@ -1,31 +1,49 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const cors = require('cors'); 
+const cors = require('cors'); // Import cors
+const app = express();
 const authRoutes = require('./routes/authRoutes');
 const todoRoutes = require('./routes/todoRoutes');
 const profileRoutes = require('./routes/profileRoutes');
-const setupSwagger = require('./swagger');
+const comicRoutes = require('./routes/comicRoutes');
+const setupSwagger = require('./swagger'); // Assuming you have a swagger setup function
 
-dotenv.config();
+const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || 'localhost';
 
-const app = express();
-const PORT = process.env.PORT || 5000;
-const HOST = process.env.HOST || '0.0.0.0';
-
-app.use(cors()); 
+// Middleware
 app.use(express.json());
 
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// Middleware CORS
+app.use(cors({
+  origin: 'http://localhost:8081', // Allow requests from this origin
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed methods
+  credentials: true // Allow credentials if needed
+}));
 
+// MongoDB Connection
+const mongoURI = process.env.MONGO_URI || process.env.mongodb_URI; // Using variables from .env
+if (!mongoURI) {
+    console.error('MongoDB URI is missing. Check your .env file.');
+    process.exit(1); // Stop if MongoDB URI is not found
+}
+
+mongoose
+    .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log('MongoDB connected'))
+    .catch((err) => console.error('MongoDB connection error:', err));
+
+// Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/todos', todoRoutes);
+app.use('/api/todo', todoRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/comics', comicRoutes);
 
+// Swagger Setup
 setupSwagger(app);
 
+// Server Start
 app.listen(PORT, HOST, () => {
-  console.log(`Server is running on http://${HOST}:${PORT}`);
+    console.log(`Server is running on http://${HOST}:${PORT}`);
 });
